@@ -90,6 +90,14 @@ input:focus,select:focus{border-color:#ff9d2e}
 .wi:hover{background:#4c3826}.wi.sel{outline:3px solid #ffd23a}.wi.off{opacity:.25;pointer-events:none}
 .wi .k{position:absolute;top:2px;left:5px;font-size:10px;font-weight:900;opacity:.6}
 .wi .q{position:absolute;bottom:1px;right:5px;font-size:11px;font-weight:900}
+#wpanel.dock{bottom:12px;right:12px;grid-template-columns:repeat(9,46px);gap:5px;padding:8px}
+#wpanel.dock .wi{width:46px;height:46px;font-size:21px;border-radius:10px}
+#wpanel.dock .wi .k{display:none}
+#wpanel.dock #wtip{font-size:16px;min-height:18px}
+#wpanel.dock.dis .wi{opacity:.35;pointer-events:none}
+#wpanel.dock.dis #wtip{opacity:.6}
+body.dockmode #teams{left:12px;transform:none}
+body.dockmode #fuseB{bottom:156px}
 #wtip{grid-column:1/-1;text-align:center;font-family:Bangers;letter-spacing:1px;font-size:18px;min-height:22px}
 #banner{position:absolute;top:19%;left:0;right:0;text-align:center;font-family:Bangers;font-size:clamp(30px,6vw,58px);letter-spacing:2px;text-shadow:0 4px 0 #000,0 0 24px rgba(0,0,0,.7);opacity:0;transition:opacity .25s,transform .25s;transform:scale(.85);padding:0 10px}
 #banner.on{opacity:1;transform:scale(1)}
@@ -192,7 +200,7 @@ input:focus,select:focus{border-color:#ff9d2e}
     <div><b>↑ ↓  /  Z S</b> viser</div>
     <div><b>ESPACE</b> maintenir pour doser la puissance, relâcher pour tirer</div>
     <div><b>ENTRÉE</b> sauter, ENTRÉE en l'air = double saut — <b style="min-width:0">RETOUR</b> salto arrière</div>
-    <div><b>TAB / clic droit</b> menu des armes (ou touches 1 à 0)</div>
+    <div><b>Armes</b> clique directement sur l'arme dans la barre en bas à droite (raccourcis : touches 1 à 0)</div>
     <div><b>Clic</b> choisir la cible (frappe aérienne, frigo, guêpe, téléporteur)</div>
     <div><b>Molette / glisser</b> zoomer et déplacer la vue</div>
     <h3>Comme dans les grands classiques</h3>
@@ -1146,16 +1154,17 @@ function updHud(){if(!g)return;const tm=curTeam(),s=g.snails[g.cur];if(!tm||!s)r
  $('tname').textContent=s.name;$('tname').style.color=tm.color;$('tteam').textContent=tm.name+(tm.ctrl==='cpu'?' (ordinateur)':'');
  const w=g.wind;$('wtxt').textContent=(w<0?'◀ ':'')+Math.round(Math.abs(w)*10)+(w>0?' ▶':'');const f=$('wfill');if(w>=0){f.style.left='50%';f.style.width=(w*50)+'%';}else{f.style.left=(50+w*50)+'%';f.style.width=(-w*50)+'%';}
  const sig=g.snails.map(x=>x.dead?'d':(x.shown??x.hp)).join(',')+g.curTeam;if(sig!==lastHpSig){lastHpSig=sig;refreshTeams();}
- const wp=WB[g.weapon],my=canControl();$('wpn').classList.toggle('dis',!my);$('wpI').textContent=wp.ico;$('wpT').textContent=wp.name;const am=tm.ammo[wp.id];$('wpA').textContent=(am<0?'∞':'×'+am)+(isTouch?' — touche pour changer':' — TAB / clic droit');
+ const wp=WB[g.weapon],my=canControl();$('wpn').classList.toggle('dis',!my);
+ if(!isTouch){const p=$('wpanel');p.classList.add('dock');p.classList.remove('hide');p.classList.toggle('dis',!(my&&g.phase==='aim'));$('wpn').classList.add('hide');document.body.classList.add('dockmode');buildPanel();if(!(my&&g.phase==='aim')&&$('wtip'))$('wtip').textContent=my?'Armes indisponibles pendant la fuite':'Tour de '+tm.name;}$('wpI').textContent=wp.ico;$('wpT').textContent=wp.name;const am=tm.ammo[wp.id];$('wpA').textContent=(am<0?'∞':'×'+am)+(isTouch?' — touche pour changer':' — TAB / clic droit');
  const fz=['grenade','petard'].includes(g.weapon)&&g.phase==='aim';$('fuseB').classList.toggle('hide',!fz);if(fz)$('fuseB').textContent='⏱ '+(g.fuse||3)+' s'+(isTouch?'':' (F)');
- if(!$('wpanel').classList.contains('hide'))buildPanel();
+ if(isTouch&&!$('wpanel').classList.contains('hide'))buildPanel();
 }
 let panelSig='';
-function buildPanel(force){const p=$('wpanel'),tm=curTeam();if(!tm)return;const sig=g.weapon+'|'+g.firedOnce+'|'+WEAPONS.map(w=>tm.ammo[w.id]).join(',');if(!force&&sig===panelSig&&p.childElementCount)return;panelSig=sig;p.innerHTML='';
+function buildPanel(force){const p=$('wpanel'),tm=curTeam();if(!tm)return;const sig=g.weapon+'|'+g.firedOnce+'|'+g.curTeam+'|'+WEAPONS.map(w=>tm.ammo[w.id]).join(',');if(!force&&sig===panelSig&&p.childElementCount)return;panelSig=sig;p.innerHTML='';
  WEAPONS.forEach((w,i)=>{const d=document.createElement('div');const am=tm.ammo[w.id];d.className='wi'+(w.id===g.weapon?' sel':'')+(am===0||g.firedOnce?' off':'');d.innerHTML=`<span class="k">${i<10?(i+1)%10:''}</span>${w.ico}<span class="q">${am<0?'∞':am}</span>`;
-  d.onpointerenter=()=>{$('wtip').textContent=w.name+' — '+w.tip;};d.onpointerdown=e=>{e.preventDefault();e.stopPropagation();acts.push('w:'+w.id);p.classList.add('hide');};d.onclick=e=>e.stopPropagation();p.appendChild(d);});
+  d.onpointerenter=()=>{$('wtip').textContent=w.name+' — '+w.tip+(tm.ammo[w.id]>0?' (×'+tm.ammo[w.id]+')':'');};d.onpointerleave=()=>{$('wtip').textContent=WB[g.weapon].name+' — '+WB[g.weapon].tip;};d.onpointerdown=e=>{e.preventDefault();e.stopPropagation();aInit();if(!canControl())return;acts.push('w:'+w.id);if(!p.classList.contains('dock'))p.classList.add('hide');setTimeout(()=>buildPanel(true),40);};d.onclick=e=>e.stopPropagation();p.appendChild(d);});
  const tip=document.createElement('div');tip.id='wtip';tip.textContent=WB[g.weapon].name+' — '+WB[g.weapon].tip;p.appendChild(tip);}
-function togglePanel(){if(!canControl()||g.phase!=='aim'){$('wpanel').classList.add('hide');return;}const p=$('wpanel');p.classList.toggle('hide');if(!p.classList.contains('hide'))buildPanel(true);}
+function togglePanel(){if(!isTouch)return;if(!canControl()||g.phase!=='aim'){$('wpanel').classList.add('hide');return;}const p=$('wpanel');p.classList.toggle('hide');if(!p.classList.contains('hide'))buildPanel(true);}
 $('wpn').onclick=e=>{e.stopPropagation();togglePanel();};
 $('fuseB').onclick=e=>{e.stopPropagation();aInit();if(canControl())acts.push('fz');};
 
@@ -1174,7 +1183,7 @@ addEventListener('keydown',e=>{aInit();if(e.target.tagName==='INPUT'||e.target.t
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Space'&&g&&canControl())acts.push('fu');});
 addEventListener('blur',()=>{keys={};if(g&&g.charging&&canControl())acts.push('fu');});
 const ptrs=new Map();let drag=null,pinch=null;
-cv.addEventListener('pointerdown',e=>{aInit();try{cv.setPointerCapture(e.pointerId);}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});$('wpanel').classList.add('hide');
+cv.addEventListener('pointerdown',e=>{aInit();try{cv.setPointerCapture(e.pointerId);}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});if(isTouch)$('wpanel').classList.add('hide');
  if(ptrs.size===1)drag={x:e.clientX,y:e.clientY,cx:cam.x,cy:cam.y,moved:false};else if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1,z:cam.z};drag=null;}});
 cv.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')hasMouse=true;mouseW=s2w(e.clientX,e.clientY);if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
  if(pinch&&ptrs.size>=2){const[a,b]=[...ptrs.values()];cam.z=clamp(pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d,zMin(),2);cam.free=240;}
