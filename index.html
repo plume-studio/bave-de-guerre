@@ -1272,7 +1272,7 @@ $('lStart').onclick=()=>{aInit();net=null;myId='local';startGame(buildCfg(localT
 function netSend(m){if(!net)return;try{if(net.host){for(const c of net.conns.values())if(c.open)c.send(m);}else if(net.conn&&net.conn.open)net.conn.send(m);}catch(e){}}
 function relay(m,except){for(const[id,c]of net.conns)if(id!==except&&c.open)try{c.send(m);}catch(e){}}
 function genCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ';let s='';for(let i=0;i<4;i++)s+=A[Math.random()*A.length|0];return s;}
-function peerOk(errEl){if(typeof Peer==='undefined'){$(errEl).textContent='Le mode en ligne n’a pas pu se charger (vérifie ta connexion).';return false;}return true;}
+function peerOk(errEl){if(!/github\.io$/.test(location.hostname)&&location.protocol!=='file:'&&location.hostname!=='localhost'){$(errEl).innerHTML='Le mode en ligne ne marche que sur le vrai site : <a href="https://plume-studio.github.io/bave-de-guerre/" style="color:#ffd23a">plume-studio.github.io/bave-de-guerre</a>';return false;}if(typeof RTCPeerConnection==='undefined'){$(errEl).textContent='Ce navigateur bloque le jeu en ligne. Ouvre le site dans Chrome, Safari ou Firefox.';return false;}if(typeof Peer==='undefined'){$(errEl).textContent='Le mode en ligne n’a pas pu se charger (vérifie ta connexion).';return false;}return true;}
 $('lbHost').insertAdjacentHTML('beforeend','');$('lbOpts').innerHTML=optsHTML('lo',false);
 ['lo_sd','lo_style','lo_map','lo_per','lo_hp','lo_time'].forEach(id=>$(id).onchange=()=>{if(net&&net.host){lobby.opts=readOpts('lo');broadcastLobby();}});
 $('hGo').onclick=()=>{aInit();if(!peerOk('hErr'))return;$('hErr').textContent='Ouverture du salon…';hostCreate(($('hName').value||'').trim()||'Les Baveux');};
